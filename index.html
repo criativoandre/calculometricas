@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Calculadora de Funil de Métricas</title>
-<link rel="icon" href="/app/favicon.ico" type="image/x-icon">
+<link rel="icon" type="image/x-icon" href="favicon.ico">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -77,9 +77,17 @@ body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--text
 .roas-row .val{font-weight:700;font-size:26px;letter-spacing:-.02em}
 .roas-row .val.positive{color:#fff}
 .roas-row .val.negative{color:#ffe0d6}
-.roas-row .val.neutral{color:rgba(255,255,255,.75)var(--amber)}
+.roas-row .val.neutral{color:rgba(255,255,255,.75)}
 
-@media(max-width:480px){.tabs{flex-direction:column}}
+/* Footer buttons */
+.result-footer{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:4px;margin-bottom:1rem}
+.btn-footer{display:flex;align-items:center;gap:7px;padding:10px 18px;border:none;border-radius:var(--radius);font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;letter-spacing:.01em}
+.btn-save{background:var(--blue-light);color:var(--blue)}
+.btn-save:hover{background:#fae3d6}
+.btn-new{background:var(--blue);color:#fff;box-shadow:0 2px 8px rgba(217,119,87,.3)}
+.btn-new:hover{background:#b86549}
+
+@media(max-width:480px){.tabs{flex-direction:column}.result-footer{flex-direction:column}.btn-footer{width:100%;justify-content:center}}
 </style>
 </head>
 <body>
@@ -150,6 +158,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--text
         </div>
       </div>
 
+      <div class="result-footer">
+        <button class="btn-footer btn-save" onclick="salvarCalculo('vendas')">💾 Salvar cálculo</button>
+        <button class="btn-footer btn-new" onclick="novoCalculo('vendas')">✦ Novo cálculo</button>
+      </div>
+
     </div>
   </div>
 
@@ -206,6 +219,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--text
         </div>
       </div>
 
+      <div class="result-footer">
+        <button class="btn-footer btn-save" onclick="salvarCalculo('leads')">💾 Salvar cálculo</button>
+        <button class="btn-footer btn-new" onclick="novoCalculo('leads')">✦ Novo cálculo</button>
+      </div>
+
     </div>
   </div>
 
@@ -233,6 +251,10 @@ function gn(id){
   var n=parseFloat(el.value);
   return isNaN(n)?0:n;
 }
+function isFilled(id){
+  var el=document.getElementById(id);
+  return el&&el.value.trim()!=='';
+}
 
 function switchTab(t){
   var tabs=document.querySelectorAll('.tab');
@@ -242,11 +264,6 @@ function switchTab(t){
   document.getElementById('sec-leads').classList.toggle('active',t==='leads');
 }
 
-function roasClass(roas){
-  if(roas>0)return 'positive';
-  if(roas<0)return 'negative';
-  return 'neutral';
-}
 function roasLabel(inv,fat){
   if(!inv)return '—';
   var r=(fat-inv)/inv*100;
@@ -259,27 +276,23 @@ function roasClassVal(inv,fat){
 }
 
 function calcVendas(){
+  // Only show results when last field "Vendas realizadas" is filled
+  if(!isFilled('sv-vend')){document.getElementById('sv-results').style.display='none';return;}
   var inv=g('sv-inv'),ticket=g('sv-ticket'),imp=gn('sv-imp'),cli=gn('sv-cli'),carr=gn('sv-carr'),vend=gn('sv-vend');
-  var hasData=inv||ticket||imp||cli||carr||vend;
-  if(!hasData){document.getElementById('sv-results').style.display='none';return;}
   document.getElementById('sv-results').style.display='block';
 
-  // Cliques
   var ctr=imp>0?(cli/imp)*100:0;
   document.getElementById('sv-r-cli').textContent=cli||'—';
   document.getElementById('sv-r-ctr').textContent=imp>0?pct(ctr):'—';
 
-  // Carrinho
   var tcarr=cli>0?(carr/cli)*100:0;
   document.getElementById('sv-r-carr').textContent=carr||'—';
   document.getElementById('sv-r-tcarr').textContent=cli>0?pct(tcarr):'—';
 
-  // Vendas
   var tvend=carr>0?(vend/carr)*100:0;
   document.getElementById('sv-r-vend').textContent=vend||'—';
   document.getElementById('sv-r-tvend').textContent=carr>0?pct(tvend):'—';
 
-  // Financeiro
   var cpm=imp>0?(inv/imp)*1000:0;
   var cpc=cli>0?inv/cli:0;
   var cpac=carr>0?inv/carr:0;
@@ -293,34 +306,28 @@ function calcVendas(){
   document.getElementById('sv-r-fat').textContent=ticket&&vend?brl(fat):'—';
 
   var roasEl=document.getElementById('sv-r-roas');
-  if(inv&&fat){
-    roasEl.textContent=roasLabel(inv,fat);
-    roasEl.className='val '+roasClassVal(inv,fat);
-  }else{roasEl.textContent='—';roasEl.className='val neutral';}
+  if(inv&&fat){roasEl.textContent=roasLabel(inv,fat);roasEl.className='val '+roasClassVal(inv,fat);}
+  else{roasEl.textContent='—';roasEl.className='val neutral';}
 }
 
 function calcLeads(){
+  // Only show results when last field "Vendas realizadas" is filled
+  if(!isFilled('sl-vend')){document.getElementById('sl-results').style.display='none';return;}
   var inv=g('sl-inv'),ticket=g('sl-ticket'),imp=gn('sl-imp'),cli=gn('sl-cli'),leads=gn('sl-leads'),vend=gn('sl-vend');
-  var hasData=inv||ticket||imp||cli||leads||vend;
-  if(!hasData){document.getElementById('sl-results').style.display='none';return;}
   document.getElementById('sl-results').style.display='block';
 
-  // Cliques
   var ctr=imp>0?(cli/imp)*100:0;
   document.getElementById('sl-r-cli').textContent=cli||'—';
   document.getElementById('sl-r-ctr').textContent=imp>0?pct(ctr):'—';
 
-  // Leads
   var tleads=cli>0?(leads/cli)*100:0;
   document.getElementById('sl-r-leads').textContent=leads||'—';
   document.getElementById('sl-r-tleads').textContent=cli>0?pct(tleads):'—';
 
-  // Vendas
   var tvend=leads>0?(vend/leads)*100:0;
   document.getElementById('sl-r-vend').textContent=vend||'—';
   document.getElementById('sl-r-tvend').textContent=leads>0?pct(tvend):'—';
 
-  // Financeiro
   var cpm=imp>0?(inv/imp)*1000:0;
   var cpc=cli>0?inv/cli:0;
   var cpal=leads>0?inv/leads:0;
@@ -334,10 +341,77 @@ function calcLeads(){
   document.getElementById('sl-r-fat').textContent=ticket&&vend?brl(fat):'—';
 
   var roasEl=document.getElementById('sl-r-roas');
-  if(inv&&fat){
-    roasEl.textContent=roasLabel(inv,fat);
-    roasEl.className='val '+roasClassVal(inv,fat);
-  }else{roasEl.textContent='—';roasEl.className='val neutral';}
+  if(inv&&fat){roasEl.textContent=roasLabel(inv,fat);roasEl.className='val '+roasClassVal(inv,fat);}
+  else{roasEl.textContent='—';roasEl.className='val neutral';}
+}
+
+function salvarCalculo(aba){
+  var data=new Date().toLocaleDateString('pt-BR');
+  var md='';
+  if(aba==='vendas'){
+    md='# Funil de Métricas — Funil de Vendas\n**Data:** '+data+'\n\n';
+    md+='## Dados de entrada\n';
+    md+='| Campo | Valor |\n|---|---|\n';
+    md+='| Investimento em tráfego | '+document.getElementById('sv-inv').value+' |\n';
+    md+='| Ticket médio | '+document.getElementById('sv-ticket').value+' |\n';
+    md+='| Impressões | '+document.getElementById('sv-imp').value+' |\n';
+    md+='| Cliques | '+document.getElementById('sv-cli').value+' |\n';
+    md+='| Adicionou ao carrinho | '+document.getElementById('sv-carr').value+' |\n';
+    md+='| Vendas realizadas | '+document.getElementById('sv-vend').value+' |\n\n';
+    md+='## Resultados\n';
+    md+='| Métrica | Valor |\n|---|---|\n';
+    md+='| Cliques | '+document.getElementById('sv-r-cli').textContent+' |\n';
+    md+='| CTR | '+document.getElementById('sv-r-ctr').textContent+' |\n';
+    md+='| Adicionou ao carrinho | '+document.getElementById('sv-r-carr').textContent+' |\n';
+    md+='| Taxa conversão carrinho | '+document.getElementById('sv-r-tcarr').textContent+' |\n';
+    md+='| Vendas | '+document.getElementById('sv-r-vend').textContent+' |\n';
+    md+='| Taxa conversão vendas | '+document.getElementById('sv-r-tvend').textContent+' |\n';
+    md+='| CPM | '+document.getElementById('sv-r-cpm').textContent+' |\n';
+    md+='| CPC | '+document.getElementById('sv-r-cpc').textContent+' |\n';
+    md+='| CPA carrinho | '+document.getElementById('sv-r-cpac').textContent+' |\n';
+    md+='| CPA venda | '+document.getElementById('sv-r-cpav').textContent+' |\n';
+    md+='| Faturamento bruto | '+document.getElementById('sv-r-fat').textContent+' |\n';
+    md+='| **ROAS** | **'+document.getElementById('sv-r-roas').textContent+'** |\n';
+  } else {
+    md='# Funil de Métricas — Funil de Leads\n**Data:** '+data+'\n\n';
+    md+='## Dados de entrada\n';
+    md+='| Campo | Valor |\n|---|---|\n';
+    md+='| Investimento em tráfego | '+document.getElementById('sl-inv').value+' |\n';
+    md+='| Ticket médio | '+document.getElementById('sl-ticket').value+' |\n';
+    md+='| Impressões | '+document.getElementById('sl-imp').value+' |\n';
+    md+='| Cliques | '+document.getElementById('sl-cli').value+' |\n';
+    md+='| Leads gerados | '+document.getElementById('sl-leads').value+' |\n';
+    md+='| Vendas realizadas | '+document.getElementById('sl-vend').value+' |\n\n';
+    md+='## Resultados\n';
+    md+='| Métrica | Valor |\n|---|---|\n';
+    md+='| Cliques | '+document.getElementById('sl-r-cli').textContent+' |\n';
+    md+='| CTR | '+document.getElementById('sl-r-ctr').textContent+' |\n';
+    md+='| Leads | '+document.getElementById('sl-r-leads').textContent+' |\n';
+    md+='| Taxa conversão leads | '+document.getElementById('sl-r-tleads').textContent+' |\n';
+    md+='| Vendas | '+document.getElementById('sl-r-vend').textContent+' |\n';
+    md+='| Taxa conversão vendas | '+document.getElementById('sl-r-tvend').textContent+' |\n';
+    md+='| CPM | '+document.getElementById('sl-r-cpm').textContent+' |\n';
+    md+='| CPC | '+document.getElementById('sl-r-cpc').textContent+' |\n';
+    md+='| CPA lead | '+document.getElementById('sl-r-cpal').textContent+' |\n';
+    md+='| CPA venda | '+document.getElementById('sl-r-cpav').textContent+' |\n';
+    md+='| Faturamento bruto | '+document.getElementById('sl-r-fat').textContent+' |\n';
+    md+='| **ROAS** | **'+document.getElementById('sl-r-roas').textContent+'** |\n';
+  }
+  var blob=new Blob([md],{type:'text/markdown'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='metricas-funil-'+aba+'-'+data.replace(/\//g,'-')+'.md';
+  a.click();
+}
+
+function novoCalculo(aba){
+  if(aba==='vendas'){
+    ['sv-inv','sv-ticket','sv-imp','sv-cli','sv-carr','sv-vend'].forEach(function(id){document.getElementById(id).value='';});
+    document.getElementById('sv-results').style.display='none';
+  } else {
+    ['sl-inv','sl-ticket','sl-imp','sl-cli','sl-leads','sl-vend'].forEach(function(id){document.getElementById(id).value='';});
+    document.getElementById('sl-results').style.display='none';
+  }
 }
 </script>
 </body>
